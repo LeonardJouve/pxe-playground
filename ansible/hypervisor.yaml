@@ -10,6 +10,8 @@
           - libvirt-daemon-system
           - virtinst
           - ovmf
+          - python3-libvirt
+          - python3-lxml
         update_cache: true
 
     - name: Allow the user manage VMs without sudo
@@ -17,3 +19,23 @@
         name: "{{ ansible_user }}"
         groups: libvirt
         append: true
+
+    - name: Define the PXE network
+      community.libvirt.virt_net:
+        name: pxe
+        state: present
+        xml: |
+          <network>
+            <name>pxe</name>
+            <bridge name="virbr-pxe"/>
+          </network>
+
+    - name: Start the PXE network
+      community.libvirt.virt_net:
+        name: pxe
+        state: active
+
+    - name: Start the PXE network on boot
+      community.libvirt.virt_net:
+        name: pxe
+        autostart: true
