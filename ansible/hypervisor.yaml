@@ -14,6 +14,19 @@
           - python3-lxml
         update_cache: true
 
+    - name: Add the HashiCorp apt repository
+      ansible.builtin.deb822_repository:
+        name: hashicorp
+        uris: https://apt.releases.hashicorp.com
+        suites: "{{ ansible_facts['distribution_release'] }}"
+        components: main
+        signed_by: https://apt.releases.hashicorp.com/gpg
+
+    - name: Install Packer
+      ansible.builtin.apt:
+        name: packer
+        update_cache: true
+
     - name: Allow the user manage VMs without sudo
       ansible.builtin.user:
         name: "{{ ansible_user }}"
