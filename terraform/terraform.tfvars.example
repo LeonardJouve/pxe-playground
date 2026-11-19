@@ -1,0 +1,5 @@
+credentials = "%appdata%\gcloud\application_default_credentials.json"
+project     = "gcp-project-name"
+zone        = "us-central1-a"
+ssh_user    = "user"
+ssh_pub_key = "~/.ssh/key_name.pub"
