@@ -1,9 +1,8 @@
-# pxe-playground
+# Terraform
 
 ## Setup
 
 ```sh
-cd terraform
 gcloud auth application-default login
 ssh-keygen -t ed25519 -f ~/.ssh/<key_name> -C <user>
 cp terraform.tfvars.example terraform.tfvars

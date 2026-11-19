@@ -1,0 +1,19 @@
+- name: Set up the KVM hypervisor
+  hosts: hypervisor
+  become: true
+
+  tasks:
+    - name: Install KVM and libvirt
+      ansible.builtin.apt:
+        name:
+          - qemu-system-x86
+          - libvirt-daemon-system
+          - virtinst
+          - ovmf
+        update_cache: true
+
+    - name: Allow the user manage VMs without sudo
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: libvirt
+        append: true
