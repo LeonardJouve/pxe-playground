@@ -39,3 +39,13 @@
       community.libvirt.virt_net:
         name: pxe
         autostart: true
+
+    - name: Start the NAT network
+      community.libvirt.virt_net:
+        name: default
+        state: active
+
+    - name: Start the NAT network on boot
+      community.libvirt.virt_net:
+        name: default
+        autostart: true
