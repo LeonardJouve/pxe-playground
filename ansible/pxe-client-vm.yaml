@@ -1,0 +1,20 @@
+- name: Create a PXE client VM
+  hosts: hypervisor
+  become: true
+
+  tasks:
+    - name: Create the VM
+      ansible.builtin.command:
+        cmd: >
+          virt-install
+          --name pxe-client
+          --vcpus 1
+          --memory 2048
+          --disk size=10
+          --pxe
+          --boot uefi,network,hd
+          --osinfo linux2022
+          --network network=pxe
+          --graphics none
+          --noautoconsole
+        creates: /etc/libvirt/qemu/pxe-client.xml
