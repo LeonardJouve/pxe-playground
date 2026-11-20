@@ -1,0 +1,38 @@
+- name: Build the disk image with Packer
+  hosts: hypervisor
+  become: true
+
+  tasks:
+    - name: Copy the Packer template
+      ansible.builtin.copy:
+        src: ../packer/
+        dest: /var/lib/pxe-images/
+
+    - name: Install the Packer plugins
+      ansible.builtin.command:
+        cmd: packer init .
+        chdir: /var/lib/pxe-images
+      changed_when: false
+
+    - name: Build the image
+      ansible.builtin.command:
+        cmd: packer build -force .
+        chdir: /var/lib/pxe-images
+        creates: /var/lib/pxe-images/debian.raw.gz
+
+    - name: Fetch the image
+      ansible.builtin.fetch:
+        src: /var/lib/pxe-images/debian.raw.gz
+        dest: files/images/
+        flat: true
+
+- name: Serve the disk image from the PXE server
+  hosts: pxe_server
+  become: true
+
+  tasks:
+    - name: Copy the image to the HTTP root
+      ansible.builtin.copy:
+        src: files/images/
+        dest: /srv/http/images/
+        mode: "0644"

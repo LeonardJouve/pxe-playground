@@ -12,6 +12,7 @@
           - ovmf
           - python3-libvirt
           - python3-lxml
+          - xorriso
         update_cache: true
 
     - name: Add the HashiCorp apt repository
