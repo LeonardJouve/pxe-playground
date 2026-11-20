@@ -1,0 +1,105 @@
+- name: Configure the PXE server
+  hosts: pxe_server
+  become: true
+
+  tasks:
+    - name: Set the address on the PXE network
+      ansible.builtin.copy:
+        dest: /etc/systemd/network/20-pxe.network
+        content: |
+          [Match]
+          Name=enp2s0
+
+          [Network]
+          Address=10.0.0.1/24
+      notify: Reload network
+
+    - name: Apply the network config before starting the services
+      ansible.builtin.meta: flush_handlers
+
+    - name: Install dnsmasq, iPXE and nginx
+      ansible.builtin.apt:
+        name:
+          - dnsmasq
+          - ipxe
+          - nginx
+        update_cache: true
+
+    - name: Create the TFTP and HTTP roots
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /srv/tftp
+        - /srv/http
+        - /srv/http/hosts
+
+    - name: Copy the iPXE UEFI binary to the TFTP root
+      ansible.builtin.copy:
+        src: /usr/lib/ipxe/ipxe.efi
+        dest: /srv/tftp/ipxe.efi
+        remote_src: true
+        mode: "0644"
+
+    - name: Copy the iPXE scripts to the HTTP root
+      ansible.builtin.copy:
+        src: files/ipxe/
+        dest: /srv/http/
+        mode: "0644"
+
+    - name: Configure dnsmasq for DHCP and TFTP on the PXE network
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.d/pxe.conf
+        content: |
+          # No DNS server, only DHCP and TFTP
+          port=0
+
+          # DHCP server
+          interface=enp2s0
+          bind-dynamic
+          dhcp-range=10.0.0.100,10.0.0.200,12h
+
+          # Firmware PXE gets iPXE over TFTP, iPXE gets the script over HTTP
+          dhcp-match=set:ipxe,175
+          dhcp-boot=tag:!ipxe,ipxe.efi
+          dhcp-boot=tag:ipxe,http://10.0.0.1/boot.ipxe
+
+          # TFTP server
+          enable-tftp
+          tftp-root=/srv/tftp
+      notify: Restart dnsmasq
+
+    - name: Configure nginx to serve the HTTP root
+      ansible.builtin.copy:
+        dest: /etc/nginx/sites-available/default
+        content: |
+          server {
+              listen 80 default_server;
+              root /srv/http;
+              autoindex on;
+          }
+      notify: Reload nginx
+
+    - name: Enable and start dnsmasq and nginx
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - dnsmasq
+        - nginx
+
+  handlers:
+    - name: Reload network
+      ansible.builtin.command: networkctl reload
+
+    - name: Restart dnsmasq
+      ansible.builtin.systemd_service:
+        name: dnsmasq
+        state: restarted
+
+    - name: Reload nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: reloaded
