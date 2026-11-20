@@ -1,0 +1,2 @@
+#!ipxe
+chain hosts/${mac:hexhyp}.ipxe || exit

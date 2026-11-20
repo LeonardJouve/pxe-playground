@@ -62,3 +62,9 @@
       community.libvirt.virt_net:
         name: default
         autostart: true
+
+    - name: Copy the SSH public key for the lab VMs
+      ansible.builtin.copy:
+        src: "{{ ansible_ssh_private_key_file }}.pub"
+        dest: /var/lib/libvirt/ssh-key.pub
+        mode: "0644"
