@@ -4,6 +4,7 @@ A KVM host on GCP running a PXE server VM and blank client VMs that boot over th
 
 - `terraform/`: creates the hypervisor host on GCP
 - `ansible/`: sets up KVM, the PXE server and a client VM
+- `ipmi.md`: powering physical nodes and setting PXE boot through their BMC
 
 ## Boot chain
 
