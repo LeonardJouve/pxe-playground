@@ -3,16 +3,11 @@
   become: true
 
   tasks:
-    - name: Download the Debian cloud image
-      ansible.builtin.get_url:
-        url: https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2
-        dest: /var/lib/libvirt/images/debian-13.qcow2
-
     - name: Create the VM disk from the cloud image
       ansible.builtin.command:
         cmd: >
           qemu-img create -f qcow2 -F qcow2
-          -b /var/lib/libvirt/images/debian-13.qcow2
+          -b /var/lib/libvirt/images/debian-13-cloud.qcow2
           /var/lib/libvirt/images/pxe-server.qcow2 10G
         creates: /var/lib/libvirt/images/pxe-server.qcow2
 
@@ -23,12 +18,14 @@
           --name pxe-server
           --vcpus 1
           --memory 1024
+          --memorybacking source.type=memfd,access.mode=shared
+          --filesystem /var/lib/pxe-images/output,images,driver.type=virtiofs
           --disk /var/lib/libvirt/images/pxe-server.qcow2
           --import
           --boot uefi
           --osinfo linux2022
           --network network=default
-          --network network=pxe
+          --network network=pxe,mac=52:54:00:10:00:01
           --cloud-init clouduser-ssh-key=/var/lib/libvirt/ssh-key.pub
           --graphics none
           --noautoconsole

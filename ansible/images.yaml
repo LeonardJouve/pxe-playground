@@ -1,4 +1,4 @@
-- name: Build the disk image with Packer
+- name: Build the disk image
   hosts: hypervisor
   become: true
 
@@ -18,21 +18,4 @@
       ansible.builtin.command:
         cmd: packer build -force .
         chdir: /var/lib/pxe-images
-        creates: /var/lib/pxe-images/debian.raw.gz
-
-    - name: Fetch the image
-      ansible.builtin.fetch:
-        src: /var/lib/pxe-images/debian.raw.gz
-        dest: files/images/
-        flat: true
-
-- name: Serve the disk image from the PXE server
-  hosts: pxe_server
-  become: true
-
-  tasks:
-    - name: Copy the image to the HTTP root
-      ansible.builtin.copy:
-        src: files/images/
-        dest: /srv/http/images/
-        mode: "0644"
+        creates: /var/lib/pxe-images/output/debian.raw.gz

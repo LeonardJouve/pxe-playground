@@ -7,6 +7,10 @@ packer {
   }
 }
 
+variable "ssh_key_file" {
+  default = "/var/lib/libvirt/ssh-key.pub"
+}
+
 source "qemu" "debian" {
   iso_url          = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2"
   iso_checksum     = "file:https://cloud.debian.org/images/cloud/trixie/latest/SHA512SUMS"
@@ -16,7 +20,6 @@ source "qemu" "debian" {
   vm_name          = "debian.raw"
   headless         = true
 
-  # cloud-init seed: sets the password of the debian user, kept in the image
   cd_label = "cidata"
   cd_content = {
     "meta-data" = ""
@@ -26,6 +29,20 @@ source "qemu" "debian" {
       chpasswd:
         expire: false
       ssh_pwauth: true
+      ssh_authorized_keys:
+        - ${trimspace(file(var.ssh_key_file))}
+      # Used by install.yaml to boot from the network once
+      packages:
+        - efibootmgr
+      # cloud-init's network config matches this build VM's MAC: give any client card DHCP
+      write_files:
+        - path: /etc/systemd/network/99-dhcp.network
+          content: |
+            [Match]
+            Name=en*
+
+            [Network]
+            DHCP=yes
     EOF
   }
 
@@ -38,6 +55,6 @@ build {
   sources = ["source.qemu.debian"]
 
   post-processor "compress" {
-    output = "debian.raw.gz"
+    output = "output/debian.raw.gz"
   }
 }

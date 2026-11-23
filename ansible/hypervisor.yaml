@@ -69,3 +69,14 @@
         src: "{{ ansible_ssh_private_key_file }}.pub"
         dest: /var/lib/libvirt/ssh-key.pub
         mode: "0644"
+
+    - name: Create the images folder shared with the PXE server
+      ansible.builtin.file:
+        path: /var/lib/pxe-images/output
+        state: directory
+        mode: "0755"
+
+    - name: Download the Debian cloud image for the lab VMs
+      ansible.builtin.get_url:
+        url: https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2
+        dest: /var/lib/libvirt/images/debian-13-cloud.qcow2

@@ -8,7 +8,7 @@
         dest: /etc/systemd/network/20-pxe.network
         content: |
           [Match]
-          Name=enp2s0
+          MACAddress=52:54:00:10:00:01
 
           [Network]
           Address=10.0.0.1/24
@@ -17,12 +17,46 @@
     - name: Apply the network config before starting the services
       ansible.builtin.meta: flush_handlers
 
+    - name: Create the dnsmasq config directory
+      ansible.builtin.file:
+        path: /etc/dnsmasq.d
+        state: directory
+        mode: "0755"
+
+    - name: Configure dnsmasq for DHCP and TFTP on the PXE network
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.d/pxe.conf
+        content: |
+          # No DNS server, only DHCP and TFTP
+          port=0
+
+          # DHCP server
+          listen-address=10.0.0.1
+          bind-dynamic
+          dhcp-range=10.0.0.100,10.0.0.200,12h
+
+          # Fixed addresses of the clients, outside the range
+          {% for host in groups['pxe_client'] %}
+          dhcp-host={{ hostvars[host].mac }},{{ hostvars[host].ansible_host }}
+          {% endfor %}
+
+          # Firmware PXE gets iPXE over TFTP, iPXE gets the script over HTTP
+          dhcp-match=set:ipxe,175
+          dhcp-boot=tag:!ipxe,ipxe.efi
+          dhcp-boot=tag:ipxe,http://10.0.0.1/boot.ipxe
+
+          # TFTP server
+          enable-tftp
+          tftp-root=/srv/tftp
+      notify: Restart dnsmasq
+
     - name: Install dnsmasq, iPXE and nginx
       ansible.builtin.apt:
         name:
           - dnsmasq
           - ipxe
           - nginx
+          - iputils-ping
         update_cache: true
 
     - name: Create the TFTP and HTTP roots
@@ -34,6 +68,23 @@
         - /srv/tftp
         - /srv/http
         - /srv/http/hosts
+        - /srv/http/installer
+
+    - name: Mount the images folder shared by the hypervisor
+      ansible.posix.mount:
+        src: images
+        path: /srv/http/images
+        fstype: virtiofs
+        state: mounted
+
+    - name: Download the Debian netboot installer
+      ansible.builtin.get_url:
+        url: "https://deb.debian.org/debian/dists/trixie/main/installer-amd64/current/images/netboot/debian-installer/amd64/{{ item }}"
+        dest: "/srv/http/installer/{{ item }}"
+        mode: "0644"
+      loop:
+        - linux
+        - initrd.gz
 
     - name: Copy the iPXE UEFI binary to the TFTP root
       ansible.builtin.copy:
@@ -42,33 +93,11 @@
         remote_src: true
         mode: "0644"
 
-    - name: Copy the iPXE scripts to the HTTP root
+    - name: Copy the iPXE scripts and the preseed to the HTTP root
       ansible.builtin.copy:
-        src: files/ipxe/
+        src: files/http/
         dest: /srv/http/
         mode: "0644"
-
-    - name: Configure dnsmasq for DHCP and TFTP on the PXE network
-      ansible.builtin.copy:
-        dest: /etc/dnsmasq.d/pxe.conf
-        content: |
-          # No DNS server, only DHCP and TFTP
-          port=0
-
-          # DHCP server
-          interface=enp2s0
-          bind-dynamic
-          dhcp-range=10.0.0.100,10.0.0.200,12h
-
-          # Firmware PXE gets iPXE over TFTP, iPXE gets the script over HTTP
-          dhcp-match=set:ipxe,175
-          dhcp-boot=tag:!ipxe,ipxe.efi
-          dhcp-boot=tag:ipxe,http://10.0.0.1/boot.ipxe
-
-          # TFTP server
-          enable-tftp
-          tftp-root=/srv/tftp
-      notify: Restart dnsmasq
 
     - name: Configure nginx to serve the HTTP root
       ansible.builtin.copy:
