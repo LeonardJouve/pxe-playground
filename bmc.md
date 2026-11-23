@@ -1,6 +1,6 @@
-# IPMI and BMC
+# BMC
 
-How to power a physical node and make it boot from PXE without touching it.
+How to power a physical node and make it boot from PXE without touching it, through its BMC with either IPMI or Redfish.
 
 ## Concepts
 
@@ -13,7 +13,7 @@ sudo ipmitool lan print 1            # IP Address, IP Address Source, MAC Addres
 sudo ipmitool user list 1            # user IDs, names, privilege
 ```
 
-## Out-of-band commands
+## IPMI
 
 All commands use the same connection options:
 
@@ -41,7 +41,7 @@ $IPMI chassis bootdev pxe options=efiboot          # next boot only, UEFI PXE
 
 The override applies to the next boot only, then the node goes back to its normal boot order.
 
-## Redfish equivalent
+## Redfish
 
 Redfish is the modern replacement for IPMI: JSON over HTTPS, same BMC, same accounts.
 

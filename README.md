@@ -4,7 +4,7 @@ A KVM host on GCP running a PXE server VM and blank client VMs that boot over th
 
 - `terraform/`: creates the hypervisor host on GCP
 - `ansible/`: sets up KVM, the PXE server and a client VM
-- `ipmi.md`: powering physical nodes and setting PXE boot through their BMC
+- `bmc.md`: powering physical nodes and setting PXE boot through their BMC, with IPMI or Redfish
 
 ## Boot chain
 
@@ -17,4 +17,5 @@ installer     --HTTP-> nginx: preseed.cfg, then images/debian.raw.gz written ove
 
 ## Note
 
-The PXE server's dnsmasq does full DHCP and DNS on the `pxe` network. On a network where another server already gives out addresses, use dnsmasq's proxy DHCP mode instead.
+- The PXE server's dnsmasq does full DHCP and DNS on the `pxe` network. On a network where another server already gives out addresses, use dnsmasq's proxy DHCP mode instead.
+- On real hardware, the BMC's Redfish API sets the boot order to PXE for the next boot only, then reboots the node. (See `bmc.md`)
