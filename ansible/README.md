@@ -17,8 +17,6 @@ ansible-playbook -i inventory.yaml pxe-server-vm.yaml
 
 ### Get the PXE server address
 
-set it as `ansible_host` of `pxe-server` in `inventory.yaml`:
-
 ```sh
 ssh <user>@<hypervisor_ip> sudo virsh domifaddr pxe-server
 ```
@@ -30,3 +28,5 @@ ansible-playbook -i inventory.yaml pxe-server.yaml
 ansible-playbook -i inventory.yaml pxe-client-vm.yaml
 ansible-playbook -i inventory.yaml install.yaml -e target=pxe-client
 ```
+
+The install takes about 3 minutes.

@@ -11,8 +11,9 @@ A KVM host on GCP running a PXE server VM and blank client VMs that boot over th
 UEFI firmware --DHCP-> dnsmasq: ipxe.efi over TFTP
 iPXE          --DHCP-> dnsmasq: http://10.0.0.1/boot.ipxe
 iPXE          --HTTP-> nginx: hosts/<mac>.ipxe, or exit
+installer     --HTTP-> nginx: preseed.cfg, then images/debian.raw.gz written over the disk
 ```
 
 ## Note
 
-The PXE server's dnsmasq does full DHCP on the isolated `pxe` network. On a network where another server already gives out addresses, use dnsmasq's proxy DHCP mode instead.
+The PXE server's dnsmasq does full DHCP and DNS on the `pxe` network. On a network where another server already gives out addresses, use dnsmasq's proxy DHCP mode instead.

@@ -12,6 +12,8 @@
 
           [Network]
           Address=10.0.0.1/24
+          # Route the clients to the internet: the netboot installer downloads its disk drivers
+          IPMasquerade=ipv4
       notify: Reload network
 
     - name: Apply the network config before starting the services
@@ -23,14 +25,13 @@
         state: directory
         mode: "0755"
 
-    - name: Configure dnsmasq for DHCP and TFTP on the PXE network
+    - name: Configure dnsmasq for DHCP, DNS and TFTP on the PXE network
       ansible.builtin.copy:
         dest: /etc/dnsmasq.d/pxe.conf
         content: |
-          # No DNS server, only DHCP and TFTP
-          port=0
-
-          # DHCP server
+          # DHCP and DNS server, DNS queries go to the server's own resolver
+          no-resolv
+          server=127.0.0.53
           listen-address=10.0.0.1
           bind-dynamic
           dhcp-range=10.0.0.100,10.0.0.200,12h

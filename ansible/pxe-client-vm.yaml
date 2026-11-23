@@ -3,13 +3,10 @@
   become: true
 
   tasks:
-    - name: Create the VM disk from the cloud image
-      ansible.builtin.command:
-        cmd: >
-          qemu-img create -f qcow2 -F qcow2
-          -b /var/lib/libvirt/images/debian-13-cloud.qcow2
-          /var/lib/libvirt/images/pxe-client.qcow2 10G
-        creates: /var/lib/libvirt/images/pxe-client.qcow2
+    - name: Create the VM disk from the Packer image
+      ansible.builtin.shell:
+        cmd: gunzip -c /var/lib/pxe-images/output/debian.raw.gz > /var/lib/libvirt/images/pxe-client.raw
+        creates: /var/lib/libvirt/images/pxe-client.raw
 
     - name: Create the VM
       ansible.builtin.command:
@@ -18,12 +15,11 @@
           --name pxe-client
           --vcpus 1
           --memory 2048
-          --disk /var/lib/libvirt/images/pxe-client.qcow2
+          --disk /var/lib/libvirt/images/pxe-client.raw,format=raw
           --import
           --boot uefi,firmware.feature0.name=secure-boot,firmware.feature0.enabled=no,hd,network
           --osinfo linux2022
           --network network=pxe,mac={{ hostvars['pxe-client'].mac }}
-          --cloud-init clouduser-ssh-key=/var/lib/libvirt/ssh-key.pub
           --graphics none
           --noautoconsole
         creates: /etc/libvirt/qemu/pxe-client.xml

@@ -6,37 +6,41 @@
     script: "/srv/http/hosts/{{ hostvars[target].mac | replace(':', '-') }}.ipxe"
 
   tasks:
-    - name: Enable the install for the client
-      ansible.builtin.copy:
-        src: files/install.ipxe
-        dest: "{{ script }}"
-        mode: "0644"
+    - name: Install the client
+      block:
+        - name: Enable the install for the client
+          ansible.builtin.copy:
+            src: files/install.ipxe
+            dest: "{{ script }}"
+            mode: "0644"
 
-    - name: Reboot the client into the network install
-      ansible.builtin.shell: >
-        efibootmgr --bootnext "$(efibootmgr | awk '/UEFI PXEv4/ {print substr($1, 5, 4); exit}')"
-        && systemd-run --on-active=2 systemctl reboot
-      delegate_to: "{{ target }}"
+        - name: Reboot the client into the network install
+          ansible.builtin.shell: >
+            efibootmgr --bootnext "$(efibootmgr | awk '/UEFI PXEv4/ {print substr($1, 5, 4); exit}')"
+            && systemd-run --on-active=2 systemctl reboot
+          delegate_to: "{{ target }}"
 
-    - name: Forget the client's old host key
-      ansible.builtin.known_hosts:
-        name: "{{ hostvars[target].ansible_host }}"
-        state: absent
-      delegate_to: localhost
-      become: false
+        - name: Forget the client's old host key
+          ansible.builtin.known_hosts:
+            name: "{{ hostvars[target].ansible_host }}"
+            state: absent
+          delegate_to: localhost
+          become: false
 
-    - name: Wait for the reinstalled client
-      ansible.builtin.wait_for_connection:
-        delay: 30
-        timeout: 900
-      delegate_to: "{{ target }}"
+        - name: Wait for the reinstalled client
+          ansible.builtin.wait_for_connection:
+            delay: 30
+            timeout: 900
+          delegate_to: "{{ target }}"
 
-    - name: Run a command on the reinstalled client
-      ansible.builtin.command: uptime
-      delegate_to: "{{ target }}"
-      changed_when: false
+        - name: Run a command on the reinstalled client
+          ansible.builtin.command: uptime
+          delegate_to: "{{ target }}"
+          changed_when: false
 
-    - name: Remove its iPXE script
-      ansible.builtin.file:
-        path: "{{ script }}"
-        state: absent
+      # Even on failure remove the reinstalls iPXE script
+      always:
+        - name: Remove its iPXE script
+          ansible.builtin.file:
+            path: "{{ script }}"
+            state: absent
